@@ -1,0 +1,7 @@
+app/build/
+build-toolchain/
+tests/*_test
+tests/host-output/
+tests/ui-output/
+**/__pycache__/
+*.pyc

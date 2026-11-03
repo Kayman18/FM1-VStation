@@ -1,0 +1,20 @@
+wait 100
+tap FX
+tap FX
+tap FX
+tap FX
+spin K1 24
+spin K2 -12
+spin K3 12
+midi USB 90 30 64
+wait 250
+midi USB b0 01 7f
+wait 250
+midi USB b0 02 7f
+wait 250
+midi USB d0 7f 00
+wait 250
+midi USB 80 30 00
+wait 250
+midi USB b0 79 00
+wait 500

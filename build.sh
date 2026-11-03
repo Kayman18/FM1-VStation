@@ -5,7 +5,7 @@ export AC79_SDK="${AC79_SDK:-$PWD/build-deps/sdk}"
 export X0X_FONTSET=barlow
 t="$PWD/build-toolchain/jieli-linux-toolchains-20260730.1"
 if [[ -n "${JIELI_TOOLCHAIN:-}" && -x "${JIELI_TOOLCHAIN}/pi32v2/bin/clang" ]]; then
- : # caller supplied the toolchain
+ :
 elif [[ -x "$t/pi32v2/bin/clang" ]]; then
  export JIELI_TOOLCHAIN="$t"
 elif [[ -f toolchain/jieli-linux-toolchains-20260730.1.tar.xz ]]; then

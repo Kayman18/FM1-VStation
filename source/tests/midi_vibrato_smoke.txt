@@ -1,0 +1,19 @@
+wait 100
+tap HOME
+spin SELECT 30
+spin K4 1
+spin K1 24
+spin K2 -16
+spin K3 16
+midi USB 90 3c 64
+wait 250
+midi USB b0 01 7f
+wait 250
+midi USB b0 02 7f
+wait 250
+midi USB d0 7f 00
+wait 250
+midi USB b0 79 00
+wait 250
+midi USB 80 3c 00
+wait 500

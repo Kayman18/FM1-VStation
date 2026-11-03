@@ -1,0 +1,7 @@
+{
+  "timestamp_model_cases": 1206,
+  "max_bpm_error": 1,
+  "engine_and_app_syntax_checks": true,
+  "C_runtime_tests_executed": false,
+  "target_build_executed": false
+}

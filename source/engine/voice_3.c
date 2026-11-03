@@ -1,0 +1,36 @@
+/* Independent mono voice state; immutable DSP tables are shared. */
+#define synth_init v3_init
+#define synth_all_notes_off v3_all_notes_off
+#define synth_note v3_note
+#define synth_param v3_param
+#define synth_panic v3_panic
+#define synth_pitch_bend v3_pitch_bend
+#define synth_sustain v3_sustain
+#define synth_note_pressure v3_note_pressure
+#define voice_test_pressure v3_test_pressure
+#define synth_controller v3_controller
+#define synth_reset_controllers v3_reset_controllers
+#define synth_render v3_render
+#define synth_faults v3_faults
+#define voice_active v3_active
+#define voice_test_controller_amp v3_test_controller_amp
+#define voice_test_mix v3_test_mix
+#define voice_test_fm_amount v3_test_fm_amount
+#define voice_test_width_depth v3_test_width_depth
+#define voice_test_pitch_env v3_test_pitch_env
+#define voice_test_lfo v3_test_lfo
+#define voice_transport_start v3_transport_start
+#define voice_clock_rate v3_clock_rate
+#define voice_private_lfo v3_private_lfo
+#define voice_shared_lfo_refresh v3_shared_lfo_refresh
+#define voice_test_selected_lfo v3_test_selected_lfo
+#define voice_test_glide_offset v3_test_glide_offset
+#define voice_test_bend_offset v3_test_bend_offset
+#define voice_test_filter v3_test_filter
+#define voice_test_drift v3_test_drift
+#define voice_test_return_gates v3_test_return_gates
+#define voice_note_overflows v3_note_overflows
+#define voice_unison_pitch v3_unison_pitch
+#define voice_test_native_state v3_test_native_state
+#define voice_test_native_amp_gain v3_test_native_amp_gain
+#include "voice_engine.inc"

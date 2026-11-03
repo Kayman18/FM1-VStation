@@ -1,0 +1,7 @@
+{
+  "rate_model_cases": 2412,
+  "max_relative_error": 1.3397052520610149e-05,
+  "syntax_only": true,
+  "C_runtime_tests_executed": false,
+  "target_build_executed": false
+}

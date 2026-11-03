@@ -1,0 +1,30 @@
+assets: pinned generated font and word headers
+loader: image 8236 B at 0x1c0a800, bss end 0x1c0f520
+loader: ota.bin 6952 B
+  ok    .ram_text: 929 insns, no calls
+  ok    no 64-bit multiply inlined beside a load
+  ok    no soft-double routines (single-precision FPU only)
+  ok    image 430392 B; RAM .data+.bss 24988 B of 98304; pool 69124 B of 344064
+  ok    register access: felucca-bsp only (device/, include/ and the app clean)
+parts    velocity and pressure  (not built in: Bluetooth MIDI, Bluetooth MIDI devices, WiFi, USB audio in, USB audio out)
+app      /workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/app/build/vstation.bin  430392 B
+loader   /workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/app/build/loader/ota.bin  6952 B
+package  /workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/app/build/vstation-0.0.8.fwsc  610108 B, identity FM-1_15000008
+{
+  "full_image_bytes": 1048576,
+  "application_bytes": 430392,
+  "application_slot_bytes": 581564,
+  "base_sha256": "ead915f71caff82d92e090da0b6912e910774fff950153fd4976f935937e6940",
+  "application_sha256": "1ee80731db5ad5d46258650d13a3ba71d4f7dc3c93e1eb367235e80d68f0e459",
+  "image_sha256": "fe40fd4318e74c404e25af413ed4ab5d503e7509e0b4446d950a828c4cdbd579",
+  "changed_region_start": 16384,
+  "changed_region_end_exclusive": 602112,
+  "boot_region_preserved": true,
+  "boot_validation": "exact bytes of the SHA256-pinned TEST81 backup",
+  "all_bytes_after_application_preserved": true,
+  "panel_calibration_preserved": true,
+  "settings_preserved": true,
+  "directory_crcs_valid": true,
+  "decrypted_application_exact": true,
+  "flashed_or_executed_on_hardware": false
+}

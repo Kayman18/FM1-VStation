@@ -1,0 +1,38 @@
+{
+  "model_only": true,
+  "windows": 485,
+  "results": [
+    {
+      "bpm": 40.125,
+      "raw_stddev": 0.03220862175712677,
+      "averaged_stddev": 0.008390384650028207,
+      "max_error": 0.018000000000000682
+    },
+    {
+      "bpm": 79.999,
+      "raw_stddev": 0.11251519505897854,
+      "averaged_stddev": 0.029652642390943822,
+      "max_error": 0.054000000000002046
+    },
+    {
+      "bpm": 123.456,
+      "raw_stddev": 0.2692118250578863,
+      "averaged_stddev": 0.07177972735542996,
+      "max_error": 0.1280000000000001
+    },
+    {
+      "bpm": 180.375,
+      "raw_stddev": 0.6184646951102906,
+      "averaged_stddev": 0.16615022903299181,
+      "max_error": 0.3480000000000132
+    },
+    {
+      "bpm": 239.25,
+      "raw_stddev": 1.1375701159765803,
+      "averaged_stddev": 0.29514523140372617,
+      "max_error": 0.6810000000000116
+    }
+  ],
+  "C_runtime_tests_executed": false,
+  "target_build_executed": false
+}

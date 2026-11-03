@@ -1,0 +1,33 @@
+wait 100
+master 2048
+shot oscillators.png
+wav first-notes.wav
+key 0 down 100
+wait 500
+key 7 down 100
+wait 120
+key 7 up
+wait 500
+key 0 up
+wait 1000
+tap EDIT
+shot mixer.png
+tap FX
+shot filter.png
+tap ENV
+shot envelope.png
+midi USB 90 30 64
+wait 400
+midi USB 90 37 64
+wait 100
+midi USB 80 37 00
+wait 400
+midi USB 80 30 00
+wait 1000
+tap PLAY
+wait 2000
+tap PLAY
+wait 100
+wavstop
+tap GLO
+shot performance.png

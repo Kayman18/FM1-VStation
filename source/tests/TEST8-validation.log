@@ -1,0 +1,22 @@
+PASS: default/active LFO block invariance, all three destinations affect output, 128 held notes, release, panic; 2621440 stress samples; peak 0.30087835; zero DSP faults
+PASS: independent two-voice sum; block invariance; steal/cancel/repeat/pedal/reset; channel filter; 20000 stress events; zero faults
+In file included from /workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/base/lib/touch.c:6,
+                 from /workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/base/host/plat_host.c:484:
+/workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/base/lib/sense.c: In function ‘sense_pressure’:
+/workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/base/lib/sense.c:228:33: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+  228 |         rel = k->dland > k->d ? k->dland - k->d : 0u;
+      |                                 ^~~~~~~~~~~~~~~
+/workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/base/lib/sense.c:231:34: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+  231 |         rel = k->v > k->floor_ ? k->v - k->floor_ : 0u;
+      |                                  ^~~~~~~~~~~~~~~~
+assets: pinned generated font and word headers
+host     /workspace/scratch/b9b08724c6a9/code/FM1-VStation-TEST8-Source-Kit/app/build/host/vstation_host
+host: 6756 ms simulated, 34 blits, render 0.3% of real time (host CPU)
+host: 2912 ms simulated, 6 blits, render 0.3% of real time (host CPU)
+host: 3112 ms simulated, 6 blits, render 0.3% of real time (host CPU)
+host: 2185 ms simulated, 33 blits, render 0.3% of real time (host CPU)
+host: 1898 ms simulated, 12 blits, render 0.3% of real time (host CPU)
+host: 1947 ms simulated, 12 blits, render 0.3% of real time (host CPU)
+host: 1947 ms simulated, 12 blits, render 0.4% of real time (host CPU)
+{'initial_blits': 6, 'idle_blits': 6, 'one_knob_extra_blits': 1, 'unchanged_performance_extra_blits': 0, 'one_counter_extra_blits': 1}
+{'events': 5000, 'samples': 646256, 'cached_vs_uncached_bit_identical': True}

@@ -1,0 +1,12 @@
+wait 100
+midi USB B0 40 7F
+midi USB 90 30 64
+wait 200
+midi USB 80 30 00
+wait 400
+midi USB 90 37 64
+wait 200
+midi USB B0 40 00
+wait 200
+midi USB 80 37 00
+wait 2000

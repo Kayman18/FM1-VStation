@@ -1,0 +1,4 @@
+{
+  "TEST6_comparison_bit_identical_samples": 256000,
+  "scope": "New controls disabled; oscillator/mix/filter/amplitude parameters varied; no pitch retuning during release (intentional bug fix changes that case)"
+}

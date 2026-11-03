@@ -1,64 +1,76 @@
 # FM1 V-Station RC1
 
-An FM1 firmware port/reconstruction inspired by the Novation V-Station architecture, packaged as **RC1** after a successful initial physical-device test of the new eight-voice engine.
+An FM1 port/reconstruction inspired by the Novation V-Station architecture. RC1 combines the tested **8-voice shared dynamic pool** with the approved device-native V-Station-style 240x240 GUI and startup splash.
 
-## Highlights
+## RC1 highlights
 
-- **8 physical voices in one shared dynamic pool** (POOL 1..8, default 8)
+- **8 physical voices in one shared dynamic pool** — POOL 1..8, default 8
 - global allocation and whole-unison-group voice stealing
 - unison 1x..4x
 - dual-core 4+4 rendering at a full eight-voice load
-- 175 retained factory presets across 13 categories
-- USB-C Web MIDI editor with full-state SysEx
-- JSON preset import/export and persistent browser user-preset library
+- 175 retained factory presets / 13 categories
+- 170 active synth parameters
+- device-native **240x240 RGB565 V-Station-inspired GUI**
+- blue/silver header, dark parameter panels and explicit K1..K4 mappings
+- V-Station-themed vector loading splash with NOVATION / V-STATION branding
+- USB-C Web MIDI editor with JSON preset import/export and persistent browser user library
 - live FM1 CPU/deadline/underrun telemetry
-- source, build scripts and prebuilt RC1 firmware included
+- browsable source tree, build scripts and prebuilt firmware included
 
-The shared pool is global: voices are not statically reserved per part or note group. At unison 1x the pool can provide eight simultaneous physical voices; at 2x, four notes; at 4x, two notes.
+At unison 1x, POOL 8 provides eight simultaneous physical voices; at 2x it provides four notes; at 4x it provides two notes. The voices are not statically reserved per part.
 
 ## Firmware
 
-The preferred application update is:
+Preferred update:
 
 `release/FM1-VStation-RC1.fwsc`
 
-A complete M-Flasher image is also provided for recovery/full-image use:
+Complete image:
 
 `release/FM1-VStation-RC1-M-Flasher.bin`
 
 Keep your own full-device backup before using a complete M-Flasher image because non-application regions come from the pinned project reference image.
 
+## Source
+
+The source is available two ways:
+
+- `source/` — browsable directly on GitHub
+- `release/FM1-VStation-RC1-Source.zip` — the matching downloadable source package
+
+The source tree includes the application, engine, fm1-base platform snapshot, tests, web editor generator, build scripts and generated font/word headers. Large external build inputs are intentionally excluded; see `DEPENDENCIES.md`.
+
 ## Building
 
-Requirements: Linux, Python 3, the JieLi AC79 toolchain and the included SDK/build dependencies.
-
-The repository contains the source and SDK/build subset. Supply the validated JieLi toolchain via `JIELI_TOOLCHAIN` (or place the archive under `toolchain/`). The reference full image is only required to regenerate the M-Flasher image; it is not required to build the `.fwsc`. See `DEPENDENCIES.md`.
-
-Build target firmware:
+Set `JIELI_TOOLCHAIN` to the validated JieLi toolchain, or place `jieli-linux-toolchains-20260730.1.tar.xz` under `toolchain/`.
 
 ```bash
 bash build.sh
 ```
 
-Build host simulator/tests where supported:
+Host simulator:
 
 ```bash
 bash build.sh --host
-bash tests/run.sh
 ```
+
+The full M-Flasher image additionally requires the pinned reference image listed in `DEPENDENCIES.md`. Without it, the normal `.fwsc` still builds.
 
 ## Web editor
 
-Open `web-editor/index.html` through the included local launcher (`start-editor.sh` on Linux or `start-editor.bat` on Windows), connect the FM1 by USB-C, then use a Web MIDI/SysEx-capable Chromium browser.
+Use `web-editor/index.html` from `source/` or the packaged `release/FM1-VStation-RC1-Web-Editor.zip`. Connect the FM1 over USB-C in a Web MIDI/SysEx-capable Chromium browser.
 
-The hardware page exposes POOL 1..8, DUAL/SINGLE CPU mode, panel scan diagnostics and live performance counters.
+The hardware page exposes POOL 1..8, DUAL/SINGLE CPU mode, scan diagnostics and live performance telemetry.
 
-## RC1 validation
+## RC1 target footprint
 
-The eight-voice baseline passed allocator, unison-group, dual-core worker, sanitizer and all-175-factory-preset regression tests. The user also reported the first physical FM1 test of the eight-voice shared pool **seems good**.
+- Application: **566,400 / 581,564 bytes**
+- Main RAM: **94,928 / 98,304 bytes**
+- FX/large-buffer pool: **335,692 / 344,064 bytes**
+- Firmware identity: **`FM-1_15010000`**
 
-See `RC1-RELEASE-NOTES.md` for details.
+See `RC1-RELEASE-NOTES.md` for validation details.
 
 ## Licensing / provenance
 
-The FM1 platform layer is based on `fm1-base` / Felucca BSP and retains their applicable open-source licensing. No Novation proprietary source code is included. This project is an independent reconstruction/port from supplied executable/data behavior and public operating information.
+The FM1 platform layer is based on `fm1-base` / Felucca BSP and retains its applicable open-source licensing. No Novation proprietary source code is included. This is an independent reconstruction/port from supplied executable/data behavior and public operating information.
