@@ -72,8 +72,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export JIELI_TOOLCHAIN=/tmp/jieli/jieli-linux-toolchains-20260730.1
           (
             cd source
+            bash build.sh --host
             python3 tests/source_consistency.py
             python3 tests/native_pool_ui_test.py
             python3 tests/preset_ui_test.py
