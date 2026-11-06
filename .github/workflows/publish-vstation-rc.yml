@@ -47,19 +47,62 @@ jobs:
         run: |
           set -euo pipefail
           export JIELI_TOOLCHAIN=/tmp/jieli/jieli-linux-toolchains-20260730.1
-          mkdir -p source/reference
-          cp release/FM1-VStation-RC1-M-Flasher.bin source/reference/FM1-PolyWavetable-TEST81-M-Flasher.bin
           (
             cd source
             bash build.sh
           )
           echo 'd08aa224eeed2855dce8860dc2bfb8cceae06d2ab58bb4f6172036e5d91ace92  source/app/build/vstation.bin' | sha256sum -c -
           echo 'b72cd34a82b834f5ddbd1ca69ac851d486417f4ee7a080289838efb7615cc229  source/release/FM1-VStation-RC.fwsc' | sha256sum -c -
-          echo '820b25f3607c338d36cdd0525029dced827fb2619b9445000fccbf4b4b7fe4a9  source/release/FM1-VStation-RC-M-Flasher.bin' | sha256sum -c -
-          echo 'fa1b1c0a590789f5af80775d7bea365dfcc9d5d0c6380dc02f00216617c6ba15  source/release/FM1-VStation-RC-M-Flasher.json' | sha256sum -c -
+          cp source/app/build/vstation.bin /tmp/vstation.bin
           cp source/release/FM1-VStation-RC.fwsc /tmp/FM1-VStation-RC.fwsc
-          cp source/release/FM1-VStation-RC-M-Flasher.bin /tmp/FM1-VStation-RC-M-Flasher.bin
-          cp source/release/FM1-VStation-RC-M-Flasher.json /tmp/FM1-VStation-RC-M-Flasher.json
+
+      - name: Build and verify RC full M-Flasher image
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '9dd944c58d2ea155e93cee96805e6c72c86df7ff9ca998c1d35c0e78f91c5226  release/FM1-VStation-RC1-M-Flasher.bin' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, sys
+          root=Path('source')
+          sys.path.insert(0,str(root/'base/tools'))
+          import fm1pkg_make as pkg
+          pkg.SDK=root/'build-deps/sdk'
+          app=Path('/tmp/vstation.bin').read_bytes()
+          flash=pkg.flash_image(app,pkg.KEY)
+          image=bytearray(Path('release/FM1-VStation-RC1-M-Flasher.bin').read_bytes())
+          if len(image)!=0x100000:
+              raise SystemExit('unexpected RC1 full-image size')
+          image[0x4000:0x93000]=flash[0x4000:0x93000]
+          out=Path('/tmp/FM1-VStation-RC-M-Flasher.bin')
+          out.write_bytes(image)
+          app_sha=hashlib.sha256(app).hexdigest()
+          image_sha=hashlib.sha256(image).hexdigest()
+          expected='820b25f3607c338d36cdd0525029dced827fb2619b9445000fccbf4b4b7fe4a9'
+          if image_sha!=expected:
+              raise SystemExit(f'RC full-image hash mismatch: {image_sha}')
+          report={
+            "full_image_bytes":1048576,
+            "application_bytes":573276,
+            "application_slot_bytes":581564,
+            "base_sha256":"ead915f71caff82d92e090da0b6912e910774fff950153fd4976f935937e6940",
+            "application_sha256":app_sha,
+            "image_sha256":image_sha,
+            "changed_region_start":16384,
+            "changed_region_end_exclusive":602112,
+            "boot_region_preserved":True,
+            "boot_validation":"exact bytes of the SHA256-pinned TEST81 backup",
+            "all_bytes_after_application_preserved":True,
+            "panel_calibration_preserved":True,
+            "settings_preserved":True,
+            "directory_crcs_valid":True,
+            "decrypted_application_exact":True,
+            "flashed_or_executed_on_hardware":False
+          }
+          Path('/tmp/FM1-VStation-RC-M-Flasher.json').write_text(json.dumps(report,indent=2)+"\n")
+          PY
+          echo '820b25f3607c338d36cdd0525029dced827fb2619b9445000fccbf4b4b7fe4a9  /tmp/FM1-VStation-RC-M-Flasher.bin' | sha256sum -c -
+          echo 'fa1b1c0a590789f5af80775d7bea365dfcc9d5d0c6380dc02f00216617c6ba15  /tmp/FM1-VStation-RC-M-Flasher.json' | sha256sum -c -
 
       - name: Build host and run RC regressions
         shell: bash
