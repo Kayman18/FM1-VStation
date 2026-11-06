@@ -3,7 +3,7 @@
 static uint32_t crc(const uint8_t *p,size_t n){uint32_t c=~0u;while(n--){c^=*p++;for(unsigned i=0;i<8;i++)c=(c>>1)^((0u-(c&1u))&0xedb88320u);}return ~c;}
 unsigned preset_param_max(unsigned id){
  if(id>=SYNTH_PARAM_COUNT)return 0;
- if(id>=168)return id==168?4:127;
+ if(id>=168)return id==168?8:127;
  return id>=163?(id==167?1:id==164?5:127):id>=160?3:id>=152?(id==159?1:id==155?19:id==157?12:127):id>=143?((id==151 || id==144)?1:id==146?34:127):id>=138?(id==142?1:id==141?34:127):id>=132?(id==137?1:id==136?34:127):id>=128?(id==131?1:127):id==127?4:(id==124 || id==126)?1:id>=122?127:id==121?1:id==120?76:id>=117?25:id==115?76:id>=113?1:id>=111?2:id>=108?127:id>=106?1:id>=103?127:id>=101?1:id==100?2:id>=98?34:id==97?240:id==96?16:id==95?3:id>=91?1:(id>=69 && id<=71)?31:id==66?2:id==67?1:(id>=58 && id<=60)?4:id==42?24:id<3?3:(id==19 || id==25)?3:((id>=62 && id<=65) || id==15 || id==44 || id==52 || id==53 || id==73 || id==84 || (id>=28 && id<=30))?1:127;
 }
 unsigned preset_param_min(unsigned id){return (id==115 || id==120)?52:id==97?40:(id==95 || id==168)?1:0;}

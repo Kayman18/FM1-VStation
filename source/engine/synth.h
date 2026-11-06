@@ -20,7 +20,7 @@
    Native EQ starting position is p161. */
 /* p127: 0 existing FM1 allocation, 1 native MONO, 2 MONO AG, 3 POLY 1,
    4 POLY 2. Native POLY modes draw from one dynamically shared eight-voice physical pool. p168 is
-   unison count 1..4 and p169 detune. The native arpeggiator was removed in TEST41. */
+   unison count 1..8 and p169 detune. The native arpeggiator was removed in TEST41. */
 /* p128 distortion amount, p129 compensation, p130 wheel depth (64 neutral),
    p131 distortion enabled. Defaults bypass; full factory FX chain is unfinished. */
 void synth_init(void);

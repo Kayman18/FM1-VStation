@@ -41,7 +41,7 @@ static const char *const labels[SYNTH_PARAM_COUNT]={"OSC1 WAVE","OSC2 WAVE","OSC
 #define VBARRIER() __asm__ volatile("" ::: "memory")
 static void number(int x,char *out){char b[16];unsigned n=0,k=0;if(x<0){out[k++]='-';x=-x;}do{b[n++]=(char)('0'+x%10);x/=10;}while(x);while(n)out[k++]=b[--n];out[k]=0;}
 static void post(unsigned kind,unsigned a,unsigned b){unsigned w=wr;if(w-rd>=128){++lost;panic_pending=1;return;}events[w&127]=(VEvent){kind,a,b};VBARRIER();wr=w+1;}
-/* RC1 browser editor protocol over USB-MIDI SysEx.
+/* RC browser editor protocol over USB-MIDI SysEx.
    Data bytes are 7-bit clean. Host requests use F0 7D 'V' 'S' 01 CMD ... F7.
    Values are unsigned 14-bit fields (all current synth parameters are <= 240). */
 enum { ED_PROTO=1, ED_HELLO=1, ED_GET_STATE=2, ED_SET_PARAM=3, ED_LOAD_PRESET=4,
@@ -56,7 +56,7 @@ static unsigned editor_put_u28(uint8_t *p,uint32_t v){if(v>0x0fffffffu)v=0x0ffff
 static unsigned editor_begin(unsigned cmd){editor_tx[0]=0xF0;editor_tx[1]=0x7D;editor_tx[2]='V';editor_tx[3]='S';editor_tx[4]=ED_PROTO;editor_tx[5]=(uint8_t)cmd;return 6;}
 static void editor_finish(unsigned n){editor_tx[n++]=0xF7;plat_sysex_send(editor_tx,n);}
 static void editor_ack(unsigned cmd,unsigned status){unsigned n=editor_begin(ED_R_ACK);editor_tx[n++]=(uint8_t)cmd;editor_tx[n++]=(uint8_t)status;editor_finish(n);}
-static void editor_send_hello(void){unsigned n=editor_begin(ED_R_HELLO);editor_tx[n++]=1;n+=editor_put_u14(editor_tx+n,SYNTH_PARAM_COUNT);n+=editor_put_u14(editor_tx+n,FACTORY_PRESET_COUNT);editor_tx[n++]=31;editor_finish(n);}
+static void editor_send_hello(void){unsigned n=editor_begin(ED_R_HELLO);editor_tx[n++]=2;n+=editor_put_u14(editor_tx+n,SYNTH_PARAM_COUNT);n+=editor_put_u14(editor_tx+n,FACTORY_PRESET_COUNT);editor_tx[n++]=31;editor_finish(n);}
 static void editor_send_param(unsigned id,unsigned value){if(!editor_connected)return;unsigned n=editor_begin(ED_R_PARAM);n+=editor_put_u14(editor_tx+n,id);n+=editor_put_u14(editor_tx+n,value);editor_finish(n);}
 static void editor_send_pool(void){if(!editor_connected)return;unsigned n=editor_begin(ED_R_POOL);editor_tx[n++]=(uint8_t)native_pool_limit_ui;editor_finish(n);}
 static void editor_send_preset(void){if(!editor_connected)return;unsigned n=editor_begin(ED_R_PRESET);n+=editor_put_u14(editor_tx+n,browser_index);editor_finish(n);}
@@ -80,7 +80,7 @@ static void editor_send_perf(void){
 int app_request_preset(const uint8_t *data,unsigned size){
  if(preset_state || wr-rd>=128)return 0;
  if(!preset_decode(data,size,pending_values))return 0;
- if(pending_values[168]>4)pending_values[168]=4;
+ if(pending_values[168]>8)pending_values[168]=8;
  if(!preset_encode(pending_values,pending_preset,PRESET_BYTES))return 0;
  pending_pool_limit=native_pool_limit_ui;pending_editor_custom=0;browser_status=1;browser_dirty=1;ui_redraw=1;preset_state=1;VBARRIER();
  post(4,0,0);return 1;
@@ -88,7 +88,7 @@ int app_request_preset(const uint8_t *data,unsigned size){
 static int app_request_factory(unsigned index){
  if(index>=FACTORY_PRESET_COUNT || preset_state || wr-rd>=128)return 0;
  for(unsigned id=0;id<SYNTH_PARAM_COUNT;id++)pending_values[id]=factory_preset_values[index][id];
- if(pending_values[168]>4)pending_values[168]=4;
+ if(pending_values[168]>8)pending_values[168]=8;
  /* These are global/runtime controls absent from the packed factory record. */
  pending_values[52]=values[52];pending_values[95]=values[95];pending_values[96]=values[96];pending_values[100]=values[100];pending_values[116]=values[116];
  if(!preset_encode(pending_values,pending_preset,PRESET_BYTES))return 0;
@@ -97,7 +97,7 @@ static int app_request_factory(unsigned index){
 static int editor_request_state(const uint8_t *p,uint32_t n){
  if(n<9u+2u*SYNTH_PARAM_COUNT || preset_state || wr-rd>=128)return 0;
  unsigned slot=editor_u14(p+5),custom=p[7]?1u:0u,pool=p[8];if(slot>FACTORY_PRESET_COUNT)return 0;if(pool<1)pool=1;if(pool>8)pool=8;
- unsigned o=9;for(unsigned id=0;id<SYNTH_PARAM_COUNT;id++,o+=2){unsigned v=editor_u14(p+o),lo=preset_param_min(id),hi=preset_param_max(id);if(id==168&&hi>4)hi=4;if(v<lo)v=lo;if(v>hi)v=hi;pending_values[id]=v;}
+ unsigned o=9;for(unsigned id=0;id<SYNTH_PARAM_COUNT;id++,o+=2){unsigned v=editor_u14(p+o),lo=preset_param_min(id),hi=preset_param_max(id);if(id==168&&hi>8)hi=8;if(v<lo)v=lo;if(v>hi)v=hi;pending_values[id]=v;}
  if(!preset_encode(pending_values,pending_preset,PRESET_BYTES))return 0;
  browser_index=slot;browser_status=1;browser_dirty=1;browser_autoload_pending=0;pending_pool_limit=pool;pending_editor_custom=custom;ui_redraw=1;preset_state=1;VBARRIER();post(4,0,0);return 1;
 }
@@ -120,7 +120,7 @@ int app_sysex(const uint8_t *p,uint32_t n){
   if(n<9){editor_ack(cmd,2);return 1;}
   unsigned id=editor_u14(p+5),v=editor_u14(p+7);
   if(id>=SYNTH_PARAM_COUNT || preset_state){editor_ack(cmd,id>=SYNTH_PARAM_COUNT?3:1);return 1;}
-  unsigned lo=preset_param_min(id),hi=preset_param_max(id);if(id==168 && hi>4)hi=4;if(v<lo)v=lo;if(v>hi)v=hi;
+  unsigned lo=preset_param_min(id),hi=preset_param_max(id);if(id==168 && hi>8)hi=8;if(v<lo)v=lo;if(v>hi)v=hi;
   values[id]=v;editor_custom=1;post(1,id,v);ui_redraw=1;browser_dirty=1;editor_send_param(id,v);return 1;
  }
  if(cmd==ED_LOAD_PRESET){
@@ -209,7 +209,7 @@ static void input(void){preset_ui_sync();touch_poll();unsigned keys=touch_keys()
  if(down&(1u<<B_SEL)){if(page!=PRESET_PAGE){page=PRESET_PAGE;browser_dirty=1;}else if(!preset_state){if(!browser_load_selected()){browser_status=3;browser_dirty=1;}}}
  if(down&(1u<<B_EDIT))page=page==1?4:page==4?14:page==14?15:page==15?19:page==19?20:page==20?43:page==43?22:page==22?39:page==39?23:page==23?40:page==40?27:page==27?29:page==29?30:page==30?31:1;
  if(down&(1u<<B_FX))page=page==2?24:page==24?25:page==25?26:page==26?28:page==28?42:page==42?46:page==46?47:page==47?48:page==48?49:page==49?50:page==50?51:page==51?52:page==52?53:page==53?54:page==54?55:page==55?56:page==56?57:page==57?58:page==58?59:2;
- if(down&(1u<<B_ENV))page=page==3?9:page==9?10:page==10?11:page==11?12:page==12?16:page==16?17:page==17?18:page==18?21:page==21?44:page==44?45:page==45?36:page==36?41:3;
+ if(down&(1u<<B_ENV))page=page==3?45:page==45?9:page==9?10:page==10?11:page==11?12:page==12?16:page==16?17:page==17?18:page==18?21:page==21?44:page==44?36:page==36?41:3;
  if(down&(1u<<B_GLO))page=page==PERFORMANCE_PAGE?WORKER_PAGE:page==WORKER_PAGE?STAGE1_PAGE:page==STAGE1_PAGE?STAGE2_PAGE:PERFORMANCE_PAGE;
  if(down&(1u<<B_LFO))page=page==5?6:page==6?7:page==7?8:page==8?32:page==32?34:page==34?35:page==35?37:page==37?38:5;
  if(down&(1u<<B_OCTDN))octave=clamp(octave-1,-3,2);
@@ -226,7 +226,7 @@ static void input(void){preset_ui_sync();touch_poll();unsigned keys=touch_keys()
   else if(k==EN_K3 && page==WORKER_PAGE){perf_stats_t ps;perf_read(&ps);perf_scan_mode(ps.scan_div<=1u?4u:1u);app_profile_reset();}
   else if(k>=EN_K1 && k<=EN_K4 && page<PARAM_PAGES && !preset_state){unsigned id=ids[page][k-EN_K1];
    if(id==95 && values[127]>=3){native_pool_limit_ui=(unsigned)clamp((int)native_pool_limit_ui+d,1,8);post(5,native_pool_limit_ui,0);editor_send_pool();}
-   else{int hi=id==168?4:(int)preset_param_max(id);values[id]=(unsigned)clamp((int)values[id]+d,(int)preset_param_min(id),hi);editor_custom=1;browser_dirty=1;post(1,id,values[id]);editor_send_param(id,values[id]);}
+   else{int hi=id==168?8:(int)preset_param_max(id);values[id]=(unsigned)clamp((int)values[id]+d,(int)preset_param_min(id),hi);editor_custom=1;browser_dirty=1;post(1,id,values[id]);editor_send_param(id,values[id]);}
   }
   ui_redraw=1;
  }
@@ -242,7 +242,7 @@ static int drawn_octave=99;
    Render the same pixels as narrow vertical strips. Drawing happens only on
    the same UI invalidations as before; audio never touches this buffer. */
 static unsigned strip_h(unsigned w){unsigned h=APP_CANVAS_PX/w;return h?h:1;}
-/* RC1 V-Station-inspired 240x240 device theme mockup.  This uses only the
+/* RC V-Station-inspired 240x240 device theme mockup.  This uses only the
    drawing primitives and fonts available on the FM1, so the simulator output
    is representative of the real panel rather than desktop concept art. */
 #define VS_BLUE RGB(10,74,166)
@@ -276,7 +276,7 @@ static void draw_full_row(unsigned screen_y,unsigned height,const char *name,con
 static void draw_footer_strips(const char *text,const char *oct){
  unsigned sh=strip_h(240);cv_stream_begin(0,214,240,26);
  for(unsigned y=0;y<26;y+=sh){unsigned h=26-y;if(h>sh)h=sh;
-  cv_begin(240,h,VS_NAVY);cv_rect(0,-(int)y,240,2,VS_BLUE2);cv_text(5,5-(int)y,&FONT_T,"FM1  RC1",VS_SILVER);cv_text(65,4-(int)y,&FONT_T,text,C_WHITE);cv_text(218,3-(int)y,&FONT_S,oct,C_HI);cv_stream_chunk();
+  cv_begin(240,h,VS_NAVY);cv_rect(0,-(int)y,240,2,VS_BLUE2);cv_text(5,5-(int)y,&FONT_T,"FM1  RC",VS_SILVER);cv_text(65,4-(int)y,&FONT_T,text,C_WHITE);cv_text(218,3-(int)y,&FONT_S,oct,C_HI);cv_stream_chunk();
  }
 }
 static void draw_param_tile(unsigned x,unsigned y,const char *label,const char *value,const felucca_font_t *vf){
@@ -361,7 +361,7 @@ static void draw(void){
  drawn_values[73]=values[73];drawn_values[84]=values[84];drawn_values[102]=values[102];drawn_values[127]=values[127];drawn_native_pool_limit=native_pool_limit_ui;drawn_page=page;
 }
 void app_splash(void){
- /* RC1 device splash: vector-only so the V-Station artwork costs almost no flash/RAM. */
+ /* RC device splash: vector-only so the V-Station artwork costs almost no flash/RAM. */
  drawn_page=~0u;lcd_fill(0,0,240,240,VS_NAVY);unsigned sh=strip_h(240);cv_stream_begin(0,0,240,240);
  for(unsigned y=0;y<240;y+=sh){unsigned h=240-y;if(h>sh)h=sh;cv_begin(240,h,VS_NAVY);
   /* blue/silver V-Station frame */
@@ -375,7 +375,7 @@ void app_splash(void){
   cv_rect(28,88-(int)y,55,73,VS_PANEL2);cv_rect(88,88-(int)y,55,73,VS_PANEL2);cv_rect(148,88-(int)y,64,73,VS_PANEL2);
   cv_text(33,91-(int)y,&FONT_T,"OSC",VS_SILVER);cv_text(94,91-(int)y,&FONT_T,"FILTER",VS_SILVER);cv_text(154,91-(int)y,&FONT_T,"FX / ENV",VS_SILVER);
   for(unsigned k=0;k<3;k++){int yy=111+(int)k*15;cv_rect(34,yy-(int)y,9,9,VS_BLUE2);cv_rect(51,yy-(int)y,22,5,VS_SILVER2);cv_rect(96,yy-(int)y,9,9,VS_BLUE2);cv_rect(113,yy-(int)y,22,5,VS_SILVER2);cv_rect(156,yy-(int)y,9,9,VS_BLUE2);cv_rect(173,yy-(int)y,29,5,VS_SILVER2);}
-  cv_text(31,204-(int)y,&FONT_L,"V-STATION",C_WHITE);cv_text(73,229-(int)y,&FONT_T,"RC1  LOADING",VS_TEXT);
+  cv_text(31,204-(int)y,&FONT_L,"V-STATION",C_WHITE);cv_text(73,229-(int)y,&FONT_T,"RC  LOADING",VS_TEXT);
   cv_stream_chunk();
  }
 }

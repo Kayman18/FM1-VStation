@@ -23,6 +23,19 @@ static void stage(float *s,int off,float x){
 }
 void portable4(float *s,float x){
  x*=s[8];float y=x*s[13]/((fabsf(x)-0.9999924898147583f)*s[14]+1.0f);
+ if(s[10]>=.25f){
+  /* The Q guard in stage() only inspects s[10]; when it cannot fire the four
+     stages are straight-line arithmetic.  Same operations in the same order
+     with the state held in locals and stored once (bit-identical). */
+  const float c=s[9],q=s[10];
+  float oa=s[3],la=s[4],ob=s[17],lb=s[18],ha,hb;
+  la=c*oa+la;ha=y-la;ha-=oa*q;oa=ha*c+oa;
+  lb=c*ob+lb;hb=la-lb;hb-=ob*q;ob=hb*c+ob;
+  la=c*oa+la;ha=y-la;ha-=oa*q;oa=ha*c+oa;
+  lb=c*ob+lb;hb=la-lb;hb-=ob*q;ob=hb*c+ob;
+  s[2]=ha;s[3]=oa;s[4]=la;s[16]=hb;s[17]=ob;s[18]=lb;
+  return;
+ }
  stage(s,2,y);stage(s,16,s[4]);stage(s,2,y);stage(s,16,s[4]);
 }
 void coefficients(float *s){

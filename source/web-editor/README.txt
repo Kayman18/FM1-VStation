@@ -1,13 +1,13 @@
-V-STATION FM1 WEB EDITOR - RC1
+V-STATION FM1 WEB EDITOR - RC
 
-1. Flash RC1 to the FM1.
+1. Flash RC to the FM1.
 2. Connect the FM1 USB-C port to the computer.
 3. Windows: double-click start-editor.bat
    Linux:   run ./start-editor.sh
 4. Chrome or Edge opens to http://127.0.0.1:8765/
 5. Click CONNECT FM1 and allow MIDI / SysEx access.
 
-RC1 keeps the TEST40/41 Web MIDI/SysEx editor transport and adds a persistent
+RC keeps the TEST40/41 Web MIDI/SysEx editor transport and adds a persistent
 User Preset Library stored in the browser:
 - 170 active synth parameters; the removed legacy seven-field tail is not shown or sent
 - 175 factory presets after removing all Motion presets; the factory bank remains alphabetical

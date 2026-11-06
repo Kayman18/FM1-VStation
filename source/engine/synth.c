@@ -81,7 +81,7 @@ static void profiled_amp(float *out,unsigned n){uint32_t t=profile_stamp();amp_l
 static void profiled_eq(float *out,unsigned n){uint32_t t=profile_stamp();eq_apply(out,n);profile_add(SYNTH_PROF_EQ,t);}
 static MidiLevel midi_level;
 #include <string.h>
-const unsigned synth_defaults[SYNTH_PARAM_COUNT]={2,2,3,90,30,20,71,30,20,45,90,40,0,64,52,1,64,64,64,0,64,0,0,0,0,0,64,0,0,0,0,20,45,90,40,64,64,64,64,64,64,64,2,0,0,0,64,20,45,64,64,64,0,1,64,64,64,64,2,2,2,64,1,1,1,1,0,1,64,0,0,0,0,0,64,64,64,64,64,64,64,64,64,64,0,64,64,64,64,64,64,0,0,0,0,3,0,120,0,0,0,0,0,64,64,64,0,0,64,64,64,0,0,0,0,64,1,0,0,0,64,0,0,0,0,0,0,0,0,127,64,0,64,78,0,0,0,0,64,0,0,0,0,0,0,0,0,0,64,64,64,0,0,64,0,0,127,0,64,0,0,0,0,0,0,64,64,0,1,0};/* TEST42-8VOICE: eight physical native voices in one dynamically shared pool.
+const unsigned synth_defaults[SYNTH_PARAM_COUNT]={2,2,3,90,30,20,71,30,20,45,90,40,0,64,52,1,64,64,64,0,64,0,0,0,0,0,64,0,0,0,0,20,45,90,40,64,64,64,64,64,64,64,2,0,0,0,64,20,45,64,64,64,0,1,64,64,64,64,2,2,2,64,1,1,1,1,0,1,64,0,0,0,0,0,64,64,64,64,64,64,64,64,64,64,0,64,64,64,64,64,64,0,0,0,0,3,0,120,0,0,0,0,0,64,64,64,0,0,64,64,64,0,0,0,0,64,1,0,0,0,64,0,0,0,0,0,0,0,0,127,64,0,64,78,0,0,0,0,64,0,0,0,0,0,0,0,0,0,64,64,64,0,0,64,0,0,127,0,64,0,0,0,0,0,0,64,64,0,1,0};/* RC: eight physical native voices in one dynamically shared pool.
    Legacy FM1 mode retains its three-voice policy. Immutable wave/rate tables
    are shared, all summing remains in original order, and voice stealing fades
    the old signal for 64 samples before replacing state. */
@@ -172,7 +172,7 @@ void synth_panic(void){native_fx_phase_clear(&fx_phase);native_delay_reset(&dela
 void synth_param(unsigned id,unsigned value){
  if(id>=SYNTH_PARAM_COUNT)return;
  if(id>=168){
-  if(id==168){unsigned next=value<1?1:value>4?4:value;if(next!=unison_count){synth_panic();unison_count=next;}amp_level_unison(note_mode?effective_unison_count():1);for(unsigned i=0;i<MAX_VOICES;i++)param_v[i](id,next);return;}
+  if(id==168){unsigned next=value<1?1:value>MAX_VOICES?MAX_VOICES:value;if(next!=unison_count){synth_panic();unison_count=next;}amp_level_unison(note_mode?effective_unison_count():1);for(unsigned i=0;i<MAX_VOICES;i++)param_v[i](id,next);return;}
   if(value>127)value=127;unison_detune=value;for(unsigned i=0;i<MAX_VOICES;i++)param_v[i](id,value);for(unsigned i=0;i<MAX_VOICES;i++){unsigned pos=(note_mode==1||note_mode==2)?i:slots[i].stack_index;unison_v[i](native_unison_pitch(effective_unison_count(),unison_detune,pos));}return;
  }
  if(id>=163){
@@ -352,14 +352,20 @@ static int render_native_pre(float *out,unsigned n){
   if(shared_lfo_mask){unsigned boundary=shared_lfo_boundary();count=shared_lfo_slice(count);if(boundary)native_refresh_shared(mask);}
   unsigned list[MAX_VOICES],vc=0;for(unsigned i=0;i<MAX_VOICES;i++)if(mask&(1u<<i))list[vc++]=i;
   unsigned submitted=0;
-  /* TEST42-8VOICE: retain one worker handoff per slice. The dynamically shared
+  /* RC: retain one worker handoff per slice. The dynamically shared
      pool splits as evenly as possible across the two cores; POOL 8 is 4+4. */
   unsigned worker_n=0,cpu0_n=vc;
   if(vc>1 && worker_submit && !worker_failures){worker_n=(vc+1)/2;cpu0_n=vc-worker_n;native_voice_job.count=count;native_voice_job.offset=0;native_voice_job.nvoices=worker_n;for(unsigned j=0;j<worker_n;j++)native_voice_job.index[j]=list[cpu0_n+j];submitted=worker_submit(render_worker_native,0);if(!submitted){worker_n=0;cpu0_n=vc;}}
   for(unsigned j=0;j<cpu0_n;j++){unsigned i=list[j];render_v[i](native_voice_buffer[i],count);}
   if(submitted && !worker_wait()){++worker_failures;synth_panic();memset(start,0,total*sizeof(*start));synth_faults=fault_sum();profile_add(SYNTH_PROF_VOICES,voice_t);return 0;}
   if(shared_lfo_mask)shared_lfo_advance(count);
-  for(unsigned k=0;k<count;k++){float sum=0.f;for(unsigned i=0;i<MAX_VOICES;i++)if(mask&(1u<<i)){float g=1.f;if(note_mode>=3){Slot *sl=&slots[i];if(sl->fade_out)g=sl->fade_out--/64.f;if(sl->fade_in){g*=(64-sl->fade_in)/64.f;sl->fade_in--;}}sum+=native_voice_buffer[i][k]*g;}out[k]=sum;}
+  /* OPT-B: when no voice is fading in this slice, sum active voice buffers in the
+     same ascending order without per-sample mask/slot bookkeeping (x*1.f==x). */
+  {const float *src[MAX_VOICES];unsigned sv=0,fading=0;
+   for(unsigned i=0;i<MAX_VOICES;i++)if(mask&(1u<<i)){src[sv++]=native_voice_buffer[i];if(note_mode>=3 && (slots[i].fade_out || slots[i].fade_in))fading=1;}
+   if(!fading){for(unsigned k=0;k<count;k++){float sum=0.f;for(unsigned j=0;j<sv;j++)sum+=src[j][k];out[k]=sum;}}
+   else
+  for(unsigned k=0;k<count;k++){float sum=0.f;for(unsigned i=0;i<MAX_VOICES;i++)if(mask&(1u<<i)){float g=1.f;if(note_mode>=3){Slot *sl=&slots[i];if(sl->fade_out)g=sl->fade_out--/64.f;if(sl->fade_in){g*=(64-sl->fade_in)/64.f;sl->fade_in--;}}sum+=native_voice_buffer[i][k]*g;}out[k]=sum;}}
   if(note_mode>=3){for(unsigned i=0;i<MAX_VOICES;i++)if((mask&(1u<<i)) && !slots[i].fade_out && slots[i].pending<128)replace_voice(i);for(unsigned i=0;i<MAX_VOICES;i++)if((mask&(1u<<i)) && !slots[i].fade_out && slots[i].note==128 && active_v[i]())replace_voice(i);cleanup_groups();}
   out+=count;n-=count;
  }

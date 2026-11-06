@@ -93,10 +93,27 @@ static inline __attribute__((always_inline)) void vr_filter_stage(float *s,unsig
  float low=s[9]*old+s[off+2];s[off+2]=low;
  float high=x-low;high-=old*q;s[off]=high;s[off+1]=high*s[9]+old;
 }
+static inline __attribute__((always_inline)) void vr_filter2_zero_drive_res0(float *s,float x);
+/* OPT-A: when s[10]>=.25 the Q guard inside vr_filter_stage cannot fire (it only
+ * tests s[10]), so the stage is pure linear arithmetic.  Keep filter state in
+ * locals across the stages and store once.  Same operations, same order =>
+ * bit-identical; only intermediate stores/reloads disappear. */
+static inline __attribute__((always_inline)) void vr_filter4_guardfree(float *s,float x){
+ x*=s[8];
+ const float c=s[9],q=s[10];
+ float oa=s[3],la=s[4],ob=s[17],lb=s[18],ha,hb;
+ la=c*oa+la;ha=x-la;ha-=oa*q;oa=ha*c+oa;
+ lb=c*ob+lb;hb=la-lb;hb-=ob*q;ob=hb*c+ob;
+ la=c*oa+la;ha=x-la;ha-=oa*q;oa=ha*c+oa;
+ lb=c*ob+lb;hb=la-lb;hb-=ob*q;ob=hb*c+ob;
+ s[2]=ha;s[3]=oa;s[4]=la;s[16]=hb;s[17]=ob;s[18]=lb;
+}
 static inline __attribute__((always_inline)) void vr_filter2_zero_drive(float *s,float x){
+ if(s[10]>=.25f){vr_filter2_zero_drive_res0(s,x);return;}
  x*=s[8];vr_filter_stage(s,2,x);vr_filter_stage(s,2,x);
 }
 static inline __attribute__((always_inline)) void vr_filter4_zero_drive(float *s,float x){
+ if(s[10]>=.25f){vr_filter4_guardfree(s,x);return;}
  x*=s[8];vr_filter_stage(s,2,x);vr_filter_stage(s,16,s[4]);vr_filter_stage(s,2,x);vr_filter_stage(s,16,s[4]);
 }
 static inline __attribute__((always_inline)) void vr_filter2_zero_drive_res0(float *s,float x){

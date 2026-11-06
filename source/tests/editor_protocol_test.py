@@ -19,7 +19,7 @@ assert all('motion' not in p['name'].lower() for p in presets)
 assert all('arp' not in p['name'].lower() for p in presets)
 assert not re.search(r'ARPE?G|ARP CTRL|ARP ENABLE|ARP PATTERN',web,re.I)
 assert 'navigator.requestMIDIAccess({sysex:true})' in web
-assert "firmware===1?'RC1':firmware===42?'TEST42 8V':'TEST'+firmware" in web
+assert "firmware===2?'RC':firmware===1?'RC1':firmware===42?'TEST42 8V':'TEST'+firmware" in web
 for phrase in ['FM1-VStation-Preset','SAVE CURRENT JSON','LOAD JSON TO FM1','presetSearch','categoryFilter','COMPARE','REVERT','RANDOMIZE','FM1 Hardware','liveTelemetry','RESET COUNTERS','User Preset Library','SAVE CURRENT TO LIBRARY','UPDATE SELECTED','EXPORT LIBRARY','IMPORT LIBRARY','localStorage']:
     assert phrase in web, phrase
 assert "sysex(3,[...enc14(id),...enc14(v)])" in web
@@ -36,4 +36,4 @@ bulk_frame_bytes=351
 perf_fields=36
 perf_frame_bytes=6 + perf_fields*4 + 1
 assert perf_frame_bytes <= int(m.group(1))
-print({'status':'passed','protocol_version':1,'firmware':'RC1','parameters':170,'presets':175,'state_frame_bytes':state_frame_bytes,'bulk_state_frame_bytes':bulk_frame_bytes,'perf_fields':perf_fields,'perf_frame_bytes':perf_frame_bytes,'json_presets':True,'legacy_test40_json_import':True,'persistent_user_library':True,'searchable_factory_presets':True,'compare_revert_randomize':True,'live_telemetry':True,'arp_ui_removed':True,'shared_pool':'1..8'})
+print({'status':'passed','protocol_version':1,'firmware':'RC','parameters':170,'presets':175,'state_frame_bytes':state_frame_bytes,'bulk_state_frame_bytes':bulk_frame_bytes,'perf_fields':perf_fields,'perf_frame_bytes':perf_frame_bytes,'json_presets':True,'legacy_test40_json_import':True,'persistent_user_library':True,'searchable_factory_presets':True,'compare_revert_randomize':True,'live_telemetry':True,'arp_ui_removed':True,'shared_pool':'1..8'})

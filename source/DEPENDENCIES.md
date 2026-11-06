@@ -1,6 +1,6 @@
 # External build dependencies
 
-The repository contains the V-Station RC1 source, FM1 SDK subset, build scripts, web editor and prebuilt release firmware.
+The repository contains the V-Station RC source, FM1 SDK subset, build scripts, web editor and prebuilt release firmware.
 
 Two large local build inputs from the validated all-in-one source kit are intentionally not duplicated in the browsable source tree:
 

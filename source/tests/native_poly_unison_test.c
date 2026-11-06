@@ -7,7 +7,7 @@ unsigned synth_test_owner(unsigned);
 unsigned synth_test_pending(unsigned);
 int main(void){
  /* The recovered pitch helper remains valid through the original 1..8 range.
-    The FM1 TEST42 shared pool is eight voices; unison itself remains 1..4. */
+    The FM1 TEST42 shared pool is eight voices; unison is 1..8. */
  for(unsigned c=1;c<=8;c++)for(unsigned d=0;d<=127;d++)for(unsigned i=0;i<c;i++){
   int num=((int)(2*(i?i-1:0))-(int)c)*256+64,den=(int)(4*c+12);float dd=(float)d/127.f;float e=i?(float)(num/den)*dd:0.f;
   assert(native_unison_pitch(c,d,i)==e);
@@ -24,13 +24,17 @@ int main(void){
  synth_panic();synth_param(127,3);synth_param(168,4);synth_note(48,100);assert(synth_voice_count()==4);
  synth_note(55,100);assert(synth_voice_count()==8);synth_note(62,100);assert(synth_voice_count()==8);synth_render(out,64);
  unsigned b=0;for(unsigned i=0;i<8;i++)b+=synth_test_owner(i)==62;assert(b==4);assert(!synth_faults);
- /* Legacy unison values above four still clamp to four; pool size is independent. */
- synth_panic();synth_param(127,1);synth_param(168,8);synth_note(60,100);assert(synth_voice_count()==4);synth_render(out,128);synth_note(60,0);synth_render(out,128);assert(!synth_faults);
+ /* Unison values above eight clamp to eight; pool size is independent. */
+ synth_panic();synth_param(127,1);synth_param(168,9);synth_note(60,100);assert(synth_voice_count()==8);synth_render(out,128);synth_note(60,0);synth_render(out,128);assert(!synth_faults);
  /* Runtime pool limit is independently selectable from 1..8. */
  synth_panic();synth_param(127,3);synth_param(168,1);synth_native_pool_limit_set(2);assert(synth_native_pool_limit()==2);
  for(unsigned n=0;n<4;n++)synth_note(40+n,100);assert(synth_voice_count()==2);synth_render(out,64);assert(!synth_faults);
  synth_native_pool_limit_set(6);assert(synth_native_pool_limit()==6);for(unsigned n=0;n<8;n++)synth_note(50+n,100);assert(synth_voice_count()==6);synth_render(out,64);assert(!synth_faults);
  synth_native_pool_limit_set(99);assert(synth_native_pool_limit()==8);
  synth_panic();synth_param(127,3);synth_param(168,4);synth_native_pool_limit_set(8);synth_note(60,100);synth_note(67,100);assert(synth_voice_count()==8);synth_render(out,64);assert(!synth_faults);
+ /* 8x unison: one note owns the whole pool; a second note steals the whole group; pool cap limits the stack. */
+ synth_panic();synth_param(127,3);synth_param(168,8);synth_native_pool_limit_set(8);synth_note(60,100);assert(synth_voice_count()==8);synth_render(out,128);
+ synth_note(67,100);synth_render(out,128);synth_render(out,128);assert(synth_voice_count()==8 && !synth_faults);
+ synth_note(60,0);synth_note(67,0);synth_panic();synth_native_pool_limit_set(6);synth_param(168,8);synth_note(60,100);assert(synth_voice_count()==6);synth_native_pool_limit_set(8);
  puts("PASS: shared eight-voice pool, pool cap 1..8, 4x-unison two-group allocation and whole-group stealing");
 }

@@ -23,7 +23,8 @@ int main(void){
  {unsigned n=PRESET_TEST22_BYTES;memset(bad,0,n);memcpy(bad,"FVS1",4);bad[4]=1;bad[5]=168;for(unsigned i=0;i<168;i++)bad[8+i]=(uint8_t)(i<SYNTH_PARAM_COUNT?p[i]:0);checksum(bad,n);assert(preset_decode(bad,n,out));assert(out[168]==1&&out[169]==0);}
  /* CRC and bounds are enforced. */
  assert(preset_encode(p,bytes,sizeof bytes));memcpy(bad,bytes,sizeof bytes);bad[20]^=1;assert(!preset_decode(bad,sizeof bytes,out));
- memcpy(bad,bytes,sizeof bytes);bad[8+168]=5;checksum(bad,sizeof bytes);assert(!preset_decode(bad,sizeof bytes,out));
+ memcpy(bad,bytes,sizeof bytes);bad[8+168]=8;checksum(bad,sizeof bytes);assert(preset_decode(bad,sizeof bytes,out) && out[168]==8); /* unison 8 is valid */
+ memcpy(bad,bytes,sizeof bytes);bad[8+168]=9;checksum(bad,sizeof bytes);assert(!preset_decode(bad,sizeof bytes,out));
  assert(!preset_decode(0,PRESET_BYTES,out));assert(!preset_encode(p,0,PRESET_BYTES));
  puts("PASS: 170-control ARP-free presets, TEST40 177-value import, TEST22 migration, CRC and bounds");
  return 0;

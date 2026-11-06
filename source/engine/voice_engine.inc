@@ -138,7 +138,20 @@ static int32_t pitch_offset(unsigned i){return bend_offsets[i]+glide.offset;}
    inside the same semitone. */
 static unsigned pitch_lfo_mask(void){unsigned m=0;for(unsigned i=0;i<3;i++)if(pitch_lfo_depth[i])m|=1u<<i;return m;}
 static unsigned pitch_env_mask(void){unsigned m=0;for(unsigned i=0;i<3;i++)if(pitch_env_depth[i])m|=1u<<i;return m;}
-static void tune_mask(unsigned mask){
+/* OPT-D: in POLY modes (p127>=3) voice_render_common.c never reads the waveform
+   of an oscillator whose mix gain is 0, and that oscillator feeds nothing else:
+     OSC3 (idx 2): nothing                        -> idle when gains[2]==0
+     OSC2 (idx 1): ring (gains[4]) and FM into OSC3 -> idle when gains[1]==0, no ring, no FM
+     OSC1 (idx 0): ring, and hard-sync of OSC2       -> idle when gains[0]==0, no ring, no sync
+   Control-rate retunes of an idle oscillator are wasted, so the render path skips
+   them.  tune() still retunes all three, and an oscillator that becomes audible
+   again is retuned immediately.  Consequence: while idle its phase advances at a
+   stale increment, so if its level is raised mid-note it resumes at a different
+   (still arbitrary, free-running) phase than before this change; pitch is correct.
+   Output is bit-identical whenever the idle set does not change during a note. */
+static unsigned osc_idle;
+static unsigned panic_replay,derived_ready;
+static void tune_mask_full(unsigned mask){
  /* Last gated note also anchors controller/tuning changes during release. */
  unsigned note=glide_valid?glide_note:48;
  for(unsigned i=0;i<3;i++){
@@ -166,7 +179,23 @@ static void tune_mask(unsigned mask){
   osc[i].wave=p[i];
  }
 }
-static void tune(void){tune_mask(7u);}
+static void tune_mask(unsigned mask){mask&=~osc_idle;if(mask)tune_mask_full(mask);}
+/* During synth_panic()'s parameter replay only the retune at id 125 (after every
+   input it reads has been set, and which recomputes all three oscillators from
+   scratch) can matter; the earlier ones are overwritten by it. */
+static unsigned panic_replay_tune_ok;
+static void tune(void){if(panic_replay_tune_ok==2)return;tune_mask_full(7u);}
+static void update_osc_idle(void){
+ unsigned idle=0;
+ if(p[127]>=3){
+  unsigned ring=gains[4]!=0.f,fm=p[45]!=0 || p[46]!=64;
+  if(gains[2]==0.f)idle|=4u;
+  if(gains[1]==0.f && !ring && !fm)idle|=2u;
+  if(gains[0]==0.f && !ring && !p[44])idle|=1u;
+ }
+ unsigned woke=osc_idle&~idle;osc_idle=idle;
+ if(woke)tune_mask_full(woke);
+}
 /* Original signed PWM setters: normalized input*2*65536*2.
    Both LFO and envelope coefficients are (encoded-64)*2048. */
 static void update_width_depths(void){
@@ -177,7 +206,10 @@ static void update_width_depths(void){
 }
 /* Only source changes or parameter events invalidate width offsets. */
 static void update_width(void){
- for(unsigned i=0;i<3;i++)width_mod[i]=osc_width_mod(mod_env.word[1],mod_env.word[3],width_env_depth[i],lfo_value(p[29]),width_lfo_depth[i]);
+ /* Inlined osc_width_mod(): the envelope level and LFO value are shared by the
+    three oscillators, so compute them once.  Same unsigned-wrap arithmetic. */
+ uint32_t level=((mod_env.word[1]>>16)*mod_env.word[3])>>15,lv=(uint32_t)lfo_value(p[29]);
+ for(unsigned i=0;i<3;i++)width_mod[i]=level*(uint32_t)width_env_depth[i]+lv*(uint32_t)width_lfo_depth[i];
 }
 void synth_pitch_bend(unsigned value14){
  if(value14>16383)value14=16383;
@@ -185,7 +217,7 @@ void synth_pitch_bend(unsigned value14){
 }
 void synth_param(unsigned id,unsigned value){
  if(id>=SYNTH_PARAM_COUNT)return;
- if(id==127){p[id]=value>4?4:value;return;}
+ if(id==127){p[id]=value>4?4:value;update_osc_idle();return;}
  if(id==97){if(value<40)value=40;if(value>240)value=240;p[id]=value;update_lfo_rates();return;}
  if(id==98 || id==99){if(value>LFO_TEMPO_DIVISIONS)value=LFO_TEMPO_DIVISIONS;p[id]=value;update_lfo_rates();return;}
  if(id>=117 && id<=119 && value>25)value=25;
@@ -202,7 +234,7 @@ void synth_param(unsigned id,unsigned value){
  if(id>=91 && id<=94)value=value?1:0;
  if(id==107 || id==106 || id==102 || id==101 || id==52 || id==53 || id==73 || id==84 || (id>=62 && id<=65))value=value?1:0;
  p[id]=value;
- if(id==125){for(unsigned i=0;i<3;i++)drift_scale[i]=osc_drift_scale(i,value);tune();}
+ if(id==125){for(unsigned i=0;i<3;i++)drift_scale[i]=osc_drift_scale(i,value);tune_mask_full(7u);}
  if(id==42 || (id>=117 && id<=119)){update_bend_offsets();tune();}
  if(id>=108 && id<=110)update_controller_amp();
  if(id==23 || (id>=39 && id<=41) || (id>=102 && id<=105))update_width_depths();
@@ -221,12 +253,20 @@ void synth_param(unsigned id,unsigned value){
  if(id==21)lfo[0][5]=lfo_fade_44100[value];
  if(id==27)lfo[1][5]=lfo_fade_44100[value];
  if(id<3 || id==13 || id==14 || id==24 || id==30 || (id>=36 && id<=38) || id==42 || (id>=54 && id<=61))tune();
+ /* OPT-E: synth_panic() replays all 170 parameters; the shared derived-state tail
+    below only depends on the final parameter values, so during that replay it
+    runs just where it can matter: first (filter_resonance is stateful: it only
+    acts when its argument changes), at the last mod-envelope parameter (31..34
+    setter), at the last filter-character parameter (122..124 setter) and at the
+    last id.  Every skipped run would be overwritten by a later one. */
+ if(panic_replay && id!=0 && id!=34 && id!=124 && id!=SYNTH_PARAM_COUNT-1)return;
  /* Original mixer setter 0x2b3a0 scales source levels before summing.
     Retain original noise bias even at zero; legacy mode cancels it at zero. */
  float source_scale=p[107]?.25f:1.f;mix_scale=p[107]?1.f:.25f;
  for(unsigned i=0;i<3;i++)gains[i]=(p[i+3]/127.f)*source_scale;
  gains[3]=p[107]?(p[43]/127.f)*source_scale:(p[43]?p[43]/127.f:-.0001f);
  gains[4]=(p[12]/127.f)*source_scale;
+ update_osc_idle();
  /* Match the setter's float rounding order before integer conversion. */
  update_cutoff_target();
  filter_env_depth=p[73]?filter_mod_depth(((int)p[35]-64)/128.f):((int32_t)p[35]-64)*256;
@@ -246,11 +286,38 @@ void synth_panic(void){return_gate_mask=0;native_released=0;native_overflows=0;
  memset(&fm_env,0,sizeof(fm_env));fm_env.mode=5;fm_env.gain=1;
  fm_env.tick=15;fm_env.release=amp_fall_44100[0];
  memset(filter,0,sizeof(filter));filter[6]=-1;filter[8]=1;filter[13]=1;filter[14]=.1f;
- for(unsigned i=0;i<SYNTH_PARAM_COUNT;i++)synth_param(i,p[i]);current_gain=0;
+ #ifndef PANIC_FORCE_FULL
+ if(derived_ready){
+  /* OPT-G: light rebuild.  The replay below exists only to re-derive state from
+     p[]; every setter in it is also run by synth_param() whenever its parameter
+     changes, so all of that derived state is already current - except the part
+     this function's own resets just wiped (amp, fm_env, mod_env, lfo, filter) and
+     the part that depends on the runtime state they reset (controller gain and
+     pitch, bend offsets, cutoff target, modulation depths, width, tuning).  Redo
+     exactly that, in the order the replay would have, and skip the 170-call walk.
+     Build with -DPANIC_FORCE_FULL to fall back to the replay; the two paths are
+     checked bit-identical by tests/panic_equiv (every id, every preset). */
+  amp.attack=amp_attack_44100[p[8]];amp.decay=amp_fall_44100[p[9]];amp.release=amp_fall_44100[p[11]];
+  {float sus=p[10]/127.f;amp.sustain=sus*sus;}
+  fm_env.attack=amp_attack_44100[p[47]];fm_env.decay=amp_fall_44100[p[48]];
+  mod_envelope_params(&mod_env,p[31],p[32],p[33],p[34]);
+  lfo[0][0]=p[19];lfo[1][0]=p[25];update_lfo_rates();
+  lfo[0][5]=lfo_fade_44100[p[21]];lfo[1][5]=lfo_fade_44100[p[27]];
+  filter_resonance(filter,p[7]/127.f);filter_character(filter,p[122],p[123],p[124]);
+  update_controller_amp();update_controller_pitch();update_bend_offsets();
+  update_cutoff_target();update_filter_lfo_depth();update_pitch_lfo_depth();
+  update_width();tune_mask_full(7u);
+ }else
+ #endif
+ {
+  panic_replay=1;panic_replay_tune_ok=2;for(unsigned i=0;i<SYNTH_PARAM_COUNT;i++)synth_param(i,p[i]);panic_replay=0;panic_replay_tune_ok=0;
+  derived_ready=1;
+ }
+ current_gain=0;
  cutoff_smoothed=cutoff_target;
  filter_control(cutoff_target,&cutoff_smoothed,0,filter_table_44100,filter);
 }
-void synth_init(void){clock_bpm_milli=0;memcpy(p,synth_defaults,sizeof(p));unison_pitch_units=0.f;memset(osc,0,sizeof(osc));for(unsigned i=0;i<3;i++)osc[i].table_index=-1;synth_faults=0;synth_panic();tune();}
+void synth_init(void){clock_bpm_milli=0;derived_ready=0;memcpy(p,synth_defaults,sizeof(p));unison_pitch_units=0.f;memset(osc,0,sizeof(osc));for(unsigned i=0;i<3;i++)osc[i].table_index=-1;synth_faults=0;synth_panic();tune();}
 /* Last-note priority and sustain are FM1 adapter policies. Released notes
    stay in their original order while the pedal is down; re-press replaces
    their existing entry. Pedal-up removes released notes in one pass. */

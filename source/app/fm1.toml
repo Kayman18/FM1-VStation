@@ -1,7 +1,7 @@
 name = "VStation"
 id_prefix = "FM-1_15"
 usb_manufacturer = "FM1 V-Station"
-usb_product = "VStation RC1"
+usb_product = "VStation RC"
 ble = false
 usb_audio_in = false
 usb_audio_out = false

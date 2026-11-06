@@ -94,11 +94,17 @@ gcc -O2 -g -fsanitize=address,undefined -ffp-contract=off -DVSTATION_TARGET -DVS
 ASAN_OPTIONS=detect_leaks=0 tests/fx_phase_test
 python3 tests/fx_phase_ui_test.py
 
-# TEST42-8VOICE native engine: shared eight-voice pool, 1..4 unison and ARP-free embedded factory bank.
+# RC native engine: shared eight-voice pool, 1..8 unison and ARP-free embedded factory bank.
 gcc -O2 -g -fsanitize=address,undefined -ffp-contract=off -DVSTATION_TARGET -DVSTATION_TEST -Iengine tests/native_poly_unison_test.c engine/*.c -lm -o tests/native_poly_unison_test
 ASAN_OPTIONS=detect_leaks=0 tests/native_poly_unison_test
 gcc -O2 -g -fsanitize=address,undefined -Iengine -Iapp tests/factory_preset_test.c engine/preset.c -o tests/factory_preset_test
 ASAN_OPTIONS=detect_leaks=0 tests/factory_preset_test
+# Voice panic rebuild: the light rebuild must render bit-identically to the full
+# 170-parameter replay for every id, value and preset exercised.
+gcc -O2 -ffp-contract=off -DVSTATION_TARGET -Iengine -Iapp tests/panic_equiv_test.c engine/*.c -lm -o tests/panic_equiv_light
+gcc -O2 -ffp-contract=off -DVSTATION_TARGET -DPANIC_FORCE_FULL -Iengine -Iapp tests/panic_equiv_test.c engine/*.c -lm -o tests/panic_equiv_full
+test "$(tests/panic_equiv_light)" = "$(tests/panic_equiv_full)" || { echo "FAIL: panic rebuild differs from full replay"; exit 1; }
+echo "PASS: voice panic light rebuild bit-identical to full parameter replay ($(tests/panic_equiv_light))"
 python3 tests/factory_preset_ui_test.py
 python3 tests/native_pool_ui_test.py
 gcc -O2 -g -fsanitize=address,undefined -ffp-contract=off -DVSTATION_TARGET -DVSTATION_TEST -Iengine tests/native_worker_test.c tests/worker_backend.c engine/*.c -lm -pthread -o tests/native_worker_test

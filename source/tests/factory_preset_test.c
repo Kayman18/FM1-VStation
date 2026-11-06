@@ -25,5 +25,5 @@ int main(void){unsigned in[SYNTH_PARAM_COUNT],out[SYNTH_PARAM_COUNT];uint8_t byt
   if(!strcmp(factory_preset_names[p],"Brass15") || !strcmp(factory_preset_names[p],"Brass18")) assert(in[127]==1);
   if(!strcmp(factory_preset_names[p],"Dance5") || !strcmp(factory_preset_names[p],"Dance17")) assert(in[168]==2);
  }
- assert(maxuni<=4);printf("PASS: %u RC1 factory patches encode/decode; requested mono/unison overrides valid; max unison %u\n",FACTORY_PRESET_COUNT,maxuni);
+ assert(maxuni<=4);printf("PASS: %u RC factory patches encode/decode; requested mono/unison overrides valid; max unison %u\n",FACTORY_PRESET_COUNT,maxuni);
 }

@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "plat.h"
 #define APP_NAME "VStation"
-#define APP_TAGLINE "RC1"
+#define APP_TAGLINE "RC"
 #define APP_SPLASH_RGB RGB(80,160,240)
 #define APP_PALETTE 3u
 #define APP_BLOCK 256u
