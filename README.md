@@ -11,10 +11,7 @@ FM1 V-Station RC is an independent FM1 port/reconstruction inspired by the Novat
 - transient steal/rebuild CPU optimizations for heavy 7x-8x unison cases
 - 175 retained factory presets / 13 categories
 - 170 active synth parameters
-- native **240x240 RGB565 V-Station-inspired GUI**
-- V-Station-themed vector loading splash
 - USB-C Web MIDI editor with JSON preset import/export and persistent browser user library
-- live FM1 CPU/deadline/underrun telemetry
 - visible source, build scripts and prebuilt firmware in this repository
 
 ## Unison / voice page
