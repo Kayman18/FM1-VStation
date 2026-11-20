@@ -27,34 +27,48 @@ At 1x unison the pool can provide eight notes; at 2x, four notes; at 4x, two not
 
 ## Firmware
 
-Preferred application update:
+- [Download the FWSC application update](https://github.com/Kayman18/FM1-VStation/releases/download/RC/FM1-VStation-RC.fwsc)
+- [GitHub release and notes](https://github.com/Kayman18/FM1-VStation/releases/tag/RC)
+- [Complete M-Flasher image](release/FM1-VStation-RC-M-Flasher.bin)
 
-`release/FM1-VStation-RC.fwsc`
+Keep your own full-device backup before using the complete M-Flasher image.
 
-Complete image:
+## Firmware screens
 
-`release/FM1-VStation-RC-M-Flasher.bin`
+These 240 × 240 screenshots were captured in the simulator using the RC firmware's display code.
 
-Keep your own full-device backup before using a complete M-Flasher image.
+| Startup | Oscillators | Mixer |
+| --- | --- | --- |
+| ![V-Station startup display](docs/screenshots/splash.png) | ![Oscillator waveforms and ring level](docs/screenshots/oscillators.png) | ![Oscillator mixer and level scale](docs/screenshots/mixer.png) |
+
+| Filter | Amplitude envelope | Native voice mode |
+| --- | --- | --- |
+| ![Cutoff, resonance, filter poles and oscillator 3 tuning](docs/screenshots/filter.png) | ![Amplitude envelope ADSR controls](docs/screenshots/envelope.png) | ![Poly 1 with eight unison voices and an eight-voice pool](docs/screenshots/unison.png) |
+
+| Presets | Delay |
+| --- | --- |
+| ![Bass2 loaded in the preset browser](docs/screenshots/presets.png) | ![Native delay controls](docs/screenshots/delay.png) |
 
 ## Source
 
-- `source/` — browsable directly on GitHub
-- `release/FM1-VStation-RC-Source.zip` — matching downloadable source package
+- [Browsable source](source/)
+- [Matching source archive](release/FM1-VStation-RC-Source.zip)
 
 The source tree includes the app, engine, fm1-base platform snapshot, tests, web editor generator and build scripts. Large external build inputs are documented in `DEPENDENCIES.md`.
 
 ## Building
 
-Set `JIELI_TOOLCHAIN` to the validated JieLi toolchain, or place `jieli-linux-toolchains-20260730.1.tar.xz` under `toolchain/`.
+Set `JIELI_TOOLCHAIN` to the validated JieLi toolchain, or place `jieli-linux-toolchains-20260730.1.tar.xz` under `source/toolchain/`.
 
 ```bash
+cd source
 bash build.sh
 ```
 
-Host simulator:
+To build the host simulator, run this from the repository root.
 
 ```bash
+cd source
 bash build.sh --host
 ```
 
