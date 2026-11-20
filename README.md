@@ -1,6 +1,6 @@
 # FM1 V-Station RC
 
-FM1 V-Station RC is an independent FM1 port/reconstruction inspired by the Novation V-Station architecture. This release candidate combines the approved 240x240 device GUI with an **8-voice shared dynamic pool** and **up to 8 unison voices**.
+FM1 V-Station RC is an independent FM1 port/reconstruction inspired by the Novation V-Station architecture. **8-voice shared dynamic pool** and **up to 8 unison voices**.
 
 ## Highlights
 
