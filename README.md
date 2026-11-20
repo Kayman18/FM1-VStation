@@ -76,7 +76,9 @@ The complete M-Flasher image additionally requires the pinned reference full ima
 
 ## Web editor
 
-Use `web-editor/index.html` from `source/` or `release/FM1-VStation-RC-Web-Editor.zip`. Connect the FM1 over USB-C with a Web MIDI/SysEx-capable Chromium browser.
+Open [`source/web-editor/index.html`](source/web-editor/index.html) or download the [web editor ZIP](release/FM1-VStation-RC-Web-Editor.zip). Connect the FM1 over USB-C with a Web MIDI/SysEx-capable Chromium browser.
+
+![V-Station web editor showing the oscillator, mixer, filter, envelope, LFO, and effects controls](docs/screenshots/web-editor.png)
 
 The Hardware tab exposes POOL 1..8, DUAL/SINGLE mode, scan diagnostics and live performance telemetry.
 
